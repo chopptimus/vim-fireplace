@@ -437,9 +437,15 @@ function! s:repl.preload(lib) dict abort
     let self.requires[a:lib] = 0
     if self.Ext() ==# 'clj'
       let qsym = s:qsym(a:lib)
-      let expr = '(clojure.core/when-not (clojure.core/find-ns '.qsym.') (try'
-            \ . ' (#''clojure.core/load-one '.qsym.' true true)'
-            \ . ' (catch Exception e (clojure.core/when-not (clojure.core/find-ns '.qsym.') (throw e)))))'
+      let expr = '(let [ns-sym '.qsym
+        \ .           ' load-one-var (clojure.core/resolve ''clojure.core/load-one)]'
+        \ .  ' (clojure.core/when-not (clojure.core/find-ns ns-sym)'
+        \ .    ' (try'
+        \ .      ' (if load-one-var'
+        \ .        ' (load-one-var ns-sym true true)'
+        \ .        ' (clojure.core/require ns-sym))'
+        \ .      ' (catch Exception e'
+        \ .        ' (clojure.core/when-not (clojure.core/find-ns ns-sym) (throw e))))))'
     else
       let expr = '(ns '.self.UserNs().' (:require '.a:lib.reload.'))'
     endif
